@@ -4,6 +4,7 @@ function popquiz() {
         screen: 'input',
         category: '',
         count: 20,
+        language: 'en',
         loading: false,
         loadingItem: false,
         loadingSuggestions: false,
@@ -51,7 +52,8 @@ function popquiz() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         category: this.category,
-                        count: parseInt(this.count)
+                        count: parseInt(this.count),
+                        language: this.language
                     })
                 });
 
@@ -94,7 +96,8 @@ function popquiz() {
                     body: JSON.stringify({
                         item: this.items[index],
                         category: this.categoryDisplay,
-                        properties: this.properties
+                        properties: this.properties,
+                        language: this.language
                     })
                 });
 

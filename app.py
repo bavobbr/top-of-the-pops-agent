@@ -213,6 +213,38 @@ def parse_json_response(text):
 ALLOWED_TAGS = ['p', 'strong', 'em', 'b', 'i', 'ul', 'ol', 'li', 'br']
 ALLOWED_ATTRIBUTES = {}
 
+# Supported languages for AI responses
+SUPPORTED_LANGUAGES = {
+    'en': 'English',
+    'zh': 'Chinese (Simplified)',
+    'hi': 'Hindi',
+    'es': 'Spanish',
+    'fr': 'French',
+    'ar': 'Arabic',
+    'bn': 'Bengali',
+    'pt': 'Portuguese',
+    'ru': 'Russian',
+    'ja': 'Japanese',
+    'de': 'German',
+    'ko': 'Korean',
+    'vi': 'Vietnamese',
+    'it': 'Italian',
+    'tr': 'Turkish',
+    'pl': 'Polish',
+    'nl': 'Dutch',
+    'th': 'Thai',
+    'id': 'Indonesian',
+    'sv': 'Swedish',
+}
+
+
+def get_language_instruction(language_code):
+    """Get prompt instruction for responding in a specific language."""
+    if language_code == 'en' or language_code not in SUPPORTED_LANGUAGES:
+        return ''
+    language_name = SUPPORTED_LANGUAGES[language_code]
+    return f'\n\nIMPORTANT: The user input may be in {language_name}. Interpret it in that language and respond with all text content (items, descriptions, property values) in {language_name}. Property keys should remain in English snake_case.'
+
 
 def render_markdown(text, inline=False):
     """Convert markdown to sanitized HTML.
@@ -602,12 +634,15 @@ def generate_list():
     data = request.json
     category = data.get('category', '')[:200]  # Max 200 chars
     count = min(max(int(data.get('count', 10)), 1), 100)
+    language = data.get('language', 'en')[:5]  # Language code
 
     if not category:
         return jsonify({'error': 'Category is required'}), 400
 
     if len(category.strip()) < 2:
         return jsonify({'error': 'Category must be at least 2 characters'}), 400
+
+    language_instruction = get_language_instruction(language)
 
     prompt = f"""You are helping create a study guide. The user wants to learn the top {count} {category}.
 
@@ -624,7 +659,7 @@ Examples by category:
 - bands: ["formed_year", "genre", "top_songs", "members"]
 - car brands: ["founded_year", "country", "popular_models", "known_for"]
 
-Be factual and use commonly accepted rankings. Return ONLY the JSON object, no markdown or other text."""
+Be factual and use commonly accepted rankings. Return ONLY the JSON object, no markdown or other text.{language_instruction}"""
 
     try:
         response = model.generate_content(prompt)
@@ -633,6 +668,7 @@ Be factual and use commonly accepted rankings. Return ONLY the JSON object, no m
         # Store in session
         session_data = get_session_data()
         session_data['category'] = category
+        session_data['language'] = language
         session_data['items'] = result.get('items', [])
         session_data['properties'] = result.get('properties', [])
         session_data['details_cache'] = {}
@@ -651,6 +687,7 @@ def get_item_details():
     item = data.get('item', '')[:200]  # Max 200 chars
     category = data.get('category', '')[:200]  # Max 200 chars
     properties = data.get('properties', [])[:10]  # Max 10 properties
+    language = data.get('language', 'en')[:5]  # Language code
 
     if not item:
         return jsonify({'error': 'Item is required'}), 400
@@ -669,8 +706,11 @@ def get_item_details():
         category = session_data.get('category', 'general')
     if not properties:
         properties = session_data.get('properties', [])
+    if language == 'en':
+        language = session_data.get('language', 'en')
 
     properties_str = ', '.join(properties) if properties else 'relevant characteristics'
+    language_instruction = get_language_instruction(language)
 
     prompt = f"""Provide details about "{item}" in the context of {category}.
 
@@ -683,7 +723,7 @@ IMPORTANT: For properties that represent multiple items (like notable_works, top
 
 Example: "notable_works": ["Work 1", "Work 2", "Work 3"]
 
-Be concise and factual. Return ONLY valid JSON, no other text."""
+Be concise and factual. Return ONLY valid JSON, no other text.{language_instruction}"""
 
     try:
         response = model.generate_content(prompt)

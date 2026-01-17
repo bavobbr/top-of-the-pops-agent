@@ -46,14 +46,42 @@
                     <label for="category" class="block text-lg font-bold text-retro-black mb-2">
                         What do you want to study?
                     </label>
-                    <input
-                        type="text"
-                        id="category"
-                        x-model="category"
-                        placeholder="e.g., movie stars, car brands, countries..."
-                        class="w-full px-4 py-3 border-3 border-retro-black rounded-lg focus:ring-2 focus:ring-retro-red focus:border-retro-red text-lg"
-                        required
-                    >
+                    <div class="flex gap-3">
+                        <input
+                            type="text"
+                            id="category"
+                            x-model="category"
+                            placeholder="e.g., movie stars, car brands, countries..."
+                            class="flex-1 px-4 py-3 border-3 border-retro-black rounded-lg focus:ring-2 focus:ring-retro-red focus:border-retro-red text-lg"
+                            required
+                        >
+                        <select
+                            x-model="language"
+                            class="px-3 py-3 border-3 border-retro-black rounded-lg bg-white text-retro-black font-bold focus:ring-2 focus:ring-retro-red focus:border-retro-red"
+                            title="Response language"
+                        >
+                            <option value="en">English</option>
+                            <option value="zh">中文</option>
+                            <option value="hi">हिन्दी</option>
+                            <option value="es">Español</option>
+                            <option value="fr">Français</option>
+                            <option value="ar">العربية</option>
+                            <option value="bn">বাংলা</option>
+                            <option value="pt">Português</option>
+                            <option value="ru">Русский</option>
+                            <option value="ja">日本語</option>
+                            <option value="de">Deutsch</option>
+                            <option value="ko">한국어</option>
+                            <option value="vi">Tiếng Việt</option>
+                            <option value="it">Italiano</option>
+                            <option value="tr">Türkçe</option>
+                            <option value="pl">Polski</option>
+                            <option value="nl">Nederlands</option>
+                            <option value="th">ไทย</option>
+                            <option value="id">Indonesia</option>
+                            <option value="sv">Svenska</option>
+                        </select>
+                    </div>
 
                     <!-- Suggestions -->
                     <div x-show="suggestions.length > 0" class="mt-4">
