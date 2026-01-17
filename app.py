@@ -71,9 +71,12 @@ def set_security_headers(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
 
-# Configure Gemini
+# Configure Gemini with JSON response mode
 genai.configure(api_key=os.getenv('GOOGLE_AI_STUDIO_KEY'))
-model = genai.GenerativeModel('gemini-2.0-flash')
+model = genai.GenerativeModel(
+    'gemini-2.0-flash',
+    generation_config={"response_mime_type": "application/json"}
+)
 
 # In-memory session storage
 # Structure: {session_id: {'data': {...}, 'ip': '...', 'created_at': timestamp, 'last_access': timestamp}}
@@ -144,8 +147,28 @@ def get_session_data():
     return sessions[session_id]['data']
 
 
+def fix_json_string(text):
+    """Fix common JSON issues from LLM responses."""
+    # Remove trailing commas before } or ]
+    text = re.sub(r',\s*([}\]])', r'\1', text)
+
+    # Fix unescaped newlines inside strings (replace with \n)
+    # This regex finds strings and escapes newlines within them
+    def escape_newlines_in_string(match):
+        s = match.group(0)
+        # Replace actual newlines with escaped newlines inside the string
+        return s.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+
+    # Match JSON strings (handling escaped quotes)
+    text = re.sub(r'"(?:[^"\\]|\\.)*"', escape_newlines_in_string, text)
+
+    return text
+
+
 def parse_json_response(text):
     """Extract JSON from Gemini response, handling markdown code blocks and common issues."""
+    original_text = text  # Keep for error logging
+
     # Try to find JSON in code blocks first
     code_block_match = re.search(r'```(?:json)?\s*([\s\S]*?)```', text)
     if code_block_match:
@@ -168,10 +191,7 @@ def parse_json_response(text):
         pass
 
     # Fix common JSON issues from LLMs
-    fixed_text = text
-
-    # Remove trailing commas before } or ]
-    fixed_text = re.sub(r',\s*([}\]])', r'\1', fixed_text)
+    fixed_text = fix_json_string(text)
 
     # Try again with fixes
     try:
@@ -201,11 +221,17 @@ def parse_json_response(text):
 
     if start != -1 and end != -1:
         extracted = text[start:end]
-        # Remove trailing commas
-        extracted = re.sub(r',\s*([}\]])', r'\1', extracted)
-        return json.loads(extracted)
+        extracted = fix_json_string(extracted)
+        try:
+            return json.loads(extracted)
+        except json.JSONDecodeError as e:
+            # Log the problematic response for debugging
+            print(f"JSON parse error: {e}")
+            print(f"Problematic text (first 500 chars): {extracted[:500]}")
+            raise
 
-    # Last resort: raise the original error
+    # Last resort: raise the original error with logging
+    print(f"Failed to parse JSON from response (first 500 chars): {original_text[:500]}")
     return json.loads(text)
 
 
