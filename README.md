@@ -11,6 +11,8 @@ An AI-powered visual learning application that helps users study ranked lists ac
 - **Smart Image Selection**: Intelligent Wikipedia image fetching with category-aware disambiguation
 - **Session Caching**: Caches item details per session for performance
 - **AI Category Suggestions**: Provides 20 diverse category ideas on the home screen
+- **Markdown Rendering**: AI-generated content rendered with proper formatting (bold, italics, lists)
+- **Wikipedia Attribution**: Shows source page and links to Wikipedia for further reading
 
 ## Tech Stack
 
@@ -18,6 +20,7 @@ An AI-powered visual learning application that helps users study ranked lists ac
 - **Framework**: Flask 3.0.0
 - **AI**: Google Generative AI (Gemini 2.0 Flash)
 - **External APIs**: Wikipedia API
+- **Content Processing**: Markdown + Bleach (server-side rendering with HTML sanitization)
 - **Runtime**: Python 3.11
 
 ### Frontend
@@ -47,20 +50,73 @@ popquiz/
 
 **Pattern**: Monolithic Flask app with a single-page frontend. Session state stored server-side with unique session IDs.
 
-### Data Flow
+### Quiz Flow
 
+```mermaid
+flowchart TD
+    A[User opens app] --> B[Load suggestions]
+    B --> C{Cached?}
+    C -->|No| D[Gemini AI: Generate 20 categories]
+    C -->|Yes| E[Return cached suggestions]
+    D --> E
+    E --> F[User selects/enters category]
+    F --> G[User sets item count 5-50]
+    G --> H[Click 'Start Learning']
+    H --> I[Gemini AI: Generate ranked list + properties]
+    I --> J[Store in session]
+    J --> K[Load first item details]
+    K --> L[Display flashcard]
+    L --> M{User action}
+    M -->|Next| N[Load next item]
+    M -->|Random| O[Load random item]
+    M -->|Select from list| P[Load selected item]
+    M -->|New Quiz| F
+    N --> L
+    O --> L
+    P --> L
 ```
-User Input (Category)
-       ↓
-/api/generate-list → Gemini AI (ranked items + properties)
-       ↓
-Session Storage (server-side)
-       ↓
-/api/get-item-details → Gemini AI (details) + Wikipedia (images)
-       ↓
-Response Cache (per session)
-       ↓
-Frontend Renders (Alpine.js)
+
+### Item Detail Query Flow
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant F as Frontend
+    participant B as Backend
+    participant G as Gemini AI
+    participant W as Wikipedia API
+
+    U->>F: Click item / Next / Random
+    F->>B: POST /api/get-item-details
+
+    Note over B: Check session cache
+
+    alt Cached
+        B-->>F: Return cached result
+    else Not cached
+        B->>G: Generate item details
+        G-->>B: {name, description, properties}
+
+        Note over B: Render markdown to HTML
+        Note over B: Sanitize with Bleach
+
+        par Wikipedia Image Fetch
+            B->>W: Search for page (multi-strategy)
+            W-->>B: Page title
+            B->>W: Get primary image (pageimages API)
+            W-->>B: Main infobox image
+            B->>W: Get additional images
+            W-->>B: Image list
+            Note over B: Score & filter images
+            B->>W: Get image URLs (imageinfo API)
+            W-->>B: Final image URLs
+        end
+
+        Note over B: Cache result in session
+        B-->>F: {name, description, properties, images, image_source}
+    end
+
+    F->>U: Render flashcard with images
 ```
 
 ### Wikipedia Image Algorithm
@@ -115,12 +171,21 @@ Returns up to 3 images along with metadata:
 
 ## API Endpoints
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| GET | `/` | Serve main HTML |
-| GET | `/api/suggestions` | Get 20 category suggestions |
-| POST | `/api/generate-list` | Generate ranked item list for category |
-| POST | `/api/get-item-details` | Get details + images for specific item |
+| Method | Endpoint | Purpose | Rate Limit |
+|--------|----------|---------|------------|
+| GET | `/` | Serve main HTML | - |
+| GET | `/api/suggestions` | Get 20 category suggestions | 10/min |
+| POST | `/api/generate-list` | Generate ranked item list for category | 5/min, 20/hr |
+| POST | `/api/get-item-details` | Get details + images for specific item | 30/min |
+
+## Security
+
+- **Rate Limiting**: Flask-Limiter protects against API abuse with per-endpoint limits
+- **CORS Protection**: API endpoints reject cross-origin requests
+- **Input Validation**: Category and item inputs are length-limited and sanitized
+- **HTML Sanitization**: Markdown output sanitized with Bleach (whitelist: `strong`, `em`, `p`, `ul`, `ol`, `li`, `br`)
+- **Session Management**: Server-side sessions with automatic expiry and per-IP limits
+- **Security Headers**: X-Frame-Options and X-Content-Type-Options set on all responses
 
 ## Setup
 
