@@ -66,7 +66,7 @@
     <div x-data="popquiz()" x-cloak class="container mx-auto px-4 py-8 max-w-6xl">
         <!-- Header -->
         <header class="text-center mb-8">
-            <h1 class="text-5xl font-retro text-retro-red drop-shadow-[3px_3px_0px_rgba(0,0,0,0.3)] tracking-wide">TOP OF THE POPS</h1>
+            <h1 @click="screen = 'input'" class="text-5xl font-retro text-retro-red drop-shadow-[3px_3px_0px_rgba(0,0,0,0.3)] tracking-wide cursor-pointer hover:text-retro-darkred transition-colors">TOP OF THE POPS</h1>
             <p x-show="screen === 'input'" class="text-retro-black mt-2 text-lg">Learn the greats through visual flashcards</p>
         </header>
 
