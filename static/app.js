@@ -23,6 +23,37 @@ function popquiz() {
         showAboutModal: false,
         selectedImageIndex: 0,
 
+        // Initialize - check URL params for shared quiz
+        init() {
+            const params = new URLSearchParams(window.location.search);
+            const sharedCategory = params.get('category');
+            const sharedCount = params.get('count');
+            const sharedLang = params.get('lang');
+
+            if (sharedCategory) {
+                this.category = sharedCategory;
+                if (sharedCount) this.count = Math.min(Math.max(parseInt(sharedCount) || 20, 5), 50);
+                if (sharedLang) this.language = sharedLang;
+                // Auto-generate the quiz
+                this.generateList();
+            }
+        },
+
+        // Update URL with current quiz params
+        updateUrl() {
+            const params = new URLSearchParams();
+            params.set('category', this.category);
+            params.set('count', this.count);
+            if (this.language !== 'en') params.set('lang', this.language);
+            const newUrl = `${window.location.pathname}?${params.toString()}`;
+            history.replaceState({}, '', newUrl);
+        },
+
+        // Clear URL params
+        clearUrl() {
+            history.replaceState({}, '', window.location.pathname);
+        },
+
         // Methods
         async loadSuggestions() {
             if (this.suggestions.length > 0) return; // Already loaded
@@ -72,6 +103,9 @@ function popquiz() {
                 this.properties = data.properties || [];
                 this.categoryDisplay = this.category;
                 this.screen = 'study';
+
+                // Update URL for sharing
+                this.updateUrl();
 
                 // Start at item #1
                 await this.loadItem(0);
@@ -159,6 +193,7 @@ function popquiz() {
             this.currentItemIndex = 0;
             this.category = '';
             this.error = null;
+            this.clearUrl();
         }
     };
 }
