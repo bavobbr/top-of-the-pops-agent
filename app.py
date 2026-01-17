@@ -3,6 +3,7 @@ import json
 import uuid
 import re
 import time
+from urllib.parse import urlparse
 import requests
 import markdown
 import bleach
@@ -50,9 +51,11 @@ def check_origin():
         origin = request.headers.get('Origin')
         # If Origin header is present, it's a cross-origin request
         if origin:
-            # Get the host from the request
-            host = request.host_url.rstrip('/')
-            if origin != host:
+            # Extract hostname from origin (handles http/https differences)
+            origin_host = urlparse(origin).netloc
+            # Get the host from the request (handles Cloud Run proxy)
+            request_host = request.host  # Just the host:port, no scheme
+            if origin_host != request_host:
                 return jsonify({
                     'error': 'forbidden',
                     'message': 'Cross-origin requests are not allowed'
