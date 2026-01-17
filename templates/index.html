@@ -180,10 +180,19 @@
                     <div class="lg:w-3/5 bg-retro-black p-4">
                         <!-- Main large image -->
                         <div x-show="currentItem.images && currentItem.images.length > 0">
-                            <div
-                                class="h-[500px] mb-3 rounded-xl bg-retro-black border-4 border-retro-red bg-contain bg-center bg-no-repeat"
-                                :style="'background-image: url(' + (currentItem.images[selectedImageIndex] || currentItem.images[0]) + ')'"
-                            ></div>
+                            <div class="relative">
+                                <div
+                                    class="h-[500px] mb-3 rounded-xl bg-retro-black border-4 border-retro-red bg-contain bg-center bg-no-repeat"
+                                    :style="'background-image: url(' + (currentItem.images[selectedImageIndex] || currentItem.images[0]) + ')'"
+                                ></div>
+                                <!-- Wikipedia source overlay -->
+                                <div
+                                    x-show="currentItem.image_source"
+                                    class="absolute bottom-5 left-2 bg-black/50 text-white/70 text-xs px-2 py-1 rounded max-w-[200px] truncate"
+                                    x-text="'via: ' + currentItem.image_source"
+                                    :title="'Wikipedia: ' + currentItem.image_source"
+                                ></div>
+                            </div>
 
                             <!-- Thumbnail strip -->
                             <div x-show="currentItem.images.length > 1" class="flex justify-center items-center gap-3">
