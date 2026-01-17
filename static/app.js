@@ -20,6 +20,7 @@ function popquiz() {
 
         // UI
         showListModal: false,
+        showAboutModal: false,
         selectedImageIndex: 0,
 
         // Methods
