@@ -41,7 +41,12 @@ An AI-powered visual learning application that helps users study ranked lists ac
 
 ```
 popquiz/
-├── app.py                  # Flask backend with AI and Wikipedia integration
+├── app.py                  # Flask routes and app setup
+├── services/               # Backend service modules
+│   ├── sessions.py         # Session management
+│   ├── gemini.py           # Gemini AI integration
+│   ├── wikipedia.py        # Wikipedia image fetching
+│   └── content.py          # Markdown rendering, language support
 ├── requirements.txt        # Python dependencies
 ├── .env                    # Environment config (GOOGLE_AI_STUDIO_KEY)
 ├── Dockerfile              # Cloud Run deployment config
@@ -51,7 +56,7 @@ popquiz/
     └── app.js              # Alpine.js frontend logic
 ```
 
-**Pattern**: Monolithic Flask app with a single-page frontend. Session state stored server-side with unique session IDs.
+**Pattern**: Modular Flask app with a single-page frontend. Backend split into focused service modules. Session state stored server-side with unique session IDs.
 
 ### Quiz Flow
 

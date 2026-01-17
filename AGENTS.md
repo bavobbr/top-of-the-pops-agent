@@ -10,7 +10,13 @@ This document helps AI coding agents (Claude, Codex, Gemini, etc.) understand th
 
 ```
 popquiz/
-├── app.py              # All backend logic (Flask routes, AI calls, Wikipedia API)
+├── app.py              # Flask routes and app setup (~190 lines)
+├── services/           # Backend service modules
+│   ├── __init__.py
+│   ├── sessions.py     # Session management (~70 lines)
+│   ├── gemini.py       # Gemini AI integration (~130 lines)
+│   ├── wikipedia.py    # Wikipedia image fetching (~230 lines)
+│   └── content.py      # Markdown rendering, language support (~70 lines)
 ├── requirements.txt    # Python dependencies
 ├── templates/
 │   └── index.html      # Single-page frontend (Alpine.js + Tailwind CSS)
@@ -21,6 +27,13 @@ popquiz/
 ├── Dockerfile          # Cloud Run deployment
 └── .env                # Environment variables (not committed)
 ```
+
+### Service Modules
+
+- **services/sessions.py**: In-memory session storage, cleanup, per-IP limits
+- **services/gemini.py**: AI model configuration, prompt generation, JSON parsing
+- **services/wikipedia.py**: Page search, disambiguation, image fetching and scoring
+- **services/content.py**: Markdown→HTML conversion, language instructions
 
 ## Coding Style
 
@@ -195,7 +208,6 @@ gcloud run deploy popquiz --source . --allow-unauthenticated
 1. **No database**: Sessions stored in memory, lost on restart
 2. **No auth**: Public API, protected only by rate limiting
 3. **No tests**: Manual testing only
-4. **Single file backend**: All logic in app.py (~770 lines)
 
 ## Security Considerations
 
