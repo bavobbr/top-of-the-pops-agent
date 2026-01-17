@@ -4,6 +4,8 @@ import uuid
 import re
 import time
 import requests
+import markdown
+import bleach
 from flask import Flask, render_template, request, jsonify, session
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -140,7 +142,7 @@ def get_session_data():
 
 
 def parse_json_response(text):
-    """Extract JSON from Gemini response, handling markdown code blocks."""
+    """Extract JSON from Gemini response, handling markdown code blocks and common issues."""
     # Try to find JSON in code blocks first
     code_block_match = re.search(r'```(?:json)?\s*([\s\S]*?)```', text)
     if code_block_match:
@@ -156,7 +158,93 @@ def parse_json_response(text):
     if start_idx != -1:
         text = text[start_idx:]
 
+    # Try parsing as-is first
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # Fix common JSON issues from LLMs
+    fixed_text = text
+
+    # Remove trailing commas before } or ]
+    fixed_text = re.sub(r',\s*([}\]])', r'\1', fixed_text)
+
+    # Try again with fixes
+    try:
+        return json.loads(fixed_text)
+    except json.JSONDecodeError:
+        pass
+
+    # Try to find and extract just the JSON object/array with balanced brackets
+    depth = 0
+    start = -1
+    end = -1
+    bracket_type = None
+
+    for i, char in enumerate(text):
+        if char in '{[' and start == -1:
+            start = i
+            bracket_type = '}' if char == '{' else ']'
+            depth = 1
+        elif start != -1:
+            if char == text[start]:
+                depth += 1
+            elif char == bracket_type:
+                depth -= 1
+                if depth == 0:
+                    end = i + 1
+                    break
+
+    if start != -1 and end != -1:
+        extracted = text[start:end]
+        # Remove trailing commas
+        extracted = re.sub(r',\s*([}\]])', r'\1', extracted)
+        return json.loads(extracted)
+
+    # Last resort: raise the original error
     return json.loads(text)
+
+
+# Allowed HTML tags and attributes for sanitized markdown output
+ALLOWED_TAGS = ['p', 'strong', 'em', 'b', 'i', 'ul', 'ol', 'li', 'br']
+ALLOWED_ATTRIBUTES = {}
+
+
+def render_markdown(text, inline=False):
+    """Convert markdown to sanitized HTML.
+
+    Args:
+        text: The markdown text to render
+        inline: If True, strip wrapping <p> tags for inline use (e.g., list items)
+    """
+    if not text:
+        return ''
+    # Convert markdown to HTML
+    html = markdown.markdown(str(text))
+    # Sanitize to only allow safe tags
+    clean_html = bleach.clean(html, tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRIBUTES, strip=True)
+    # Strip wrapping <p> tags for inline content
+    if inline:
+        clean_html = re.sub(r'^<p>(.*)</p>$', r'\1', clean_html.strip(), flags=re.DOTALL)
+    return clean_html
+
+
+def render_markdown_in_result(result):
+    """Apply markdown rendering to description and properties in a result dict."""
+    if 'description' in result:
+        result['description'] = render_markdown(result['description'])
+
+    if 'properties' in result and isinstance(result['properties'], dict):
+        for key, value in result['properties'].items():
+            if isinstance(value, list):
+                # Use inline=True for list items to avoid <p> wrapper
+                result['properties'][key] = [render_markdown(item, inline=True) for item in value]
+            elif isinstance(value, str):
+                # Use inline=True for single values
+                result['properties'][key] = render_markdown(value, inline=True)
+
+    return result
 
 
 def get_category_disambiguation_hints(category):
@@ -597,6 +685,9 @@ Be concise and factual. Return ONLY valid JSON, no other text."""
     try:
         response = model.generate_content(prompt)
         result = parse_json_response(response.text)
+
+        # Render markdown in description and properties
+        render_markdown_in_result(result)
 
         # Fetch Wikipedia images with category context for better disambiguation
         image_result = fetch_wikipedia_images(item, category=category)

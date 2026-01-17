@@ -230,7 +230,7 @@
                             </span>
                         </div>
 
-                        <p class="text-retro-black mb-6" x-text="currentItem.description"></p>
+                        <p class="text-retro-black mb-6" x-html="currentItem.description"></p>
 
                         <!-- Properties -->
                         <div x-show="currentItem.properties" class="border-t-2 border-retro-black pt-4 flex-1">
@@ -244,13 +244,13 @@
                                             <template x-if="Array.isArray(value)">
                                                 <ul class="list-disc list-inside space-y-1">
                                                     <template x-for="(item, i) in value" :key="i">
-                                                        <li x-text="item"></li>
+                                                        <li x-html="item"></li>
                                                     </template>
                                                 </ul>
                                             </template>
                                             <!-- Render as text if not array -->
                                             <template x-if="!Array.isArray(value)">
-                                                <span x-text="value"></span>
+                                                <span x-html="value"></span>
                                             </template>
                                         </dd>
                                     </div>
