@@ -63,6 +63,56 @@ Response Cache (per session)
 Frontend Renders (Alpine.js)
 ```
 
+### Wikipedia Image Algorithm
+
+The app uses a multi-stage algorithm to fetch relevant images from Wikipedia:
+
+**1. Page Discovery (Disambiguation)**
+
+Finding the right Wikipedia page is critical—searching "Prince" could return the musician, a royal title, or dozens of other pages. The algorithm uses multiple search strategies:
+
+- **Exact match**: Try the item name directly (e.g., "The Beatles")
+- **Disambiguation suffixes**: Based on category, try suffixes like "Prince (musician)" or "Queen (band)"
+- **Category-enhanced**: Fall back to searching "Prince 80s rock bands"
+- **Disambiguation resolution**: If a disambiguation page is hit, scan results for the best match
+
+Category hints are derived from keywords:
+- Music categories → `(musician)`, `(band)`, `(singer)`
+- Film categories → `(actor)`, `(actress)`, `(film)`
+- Sports categories → `(athlete)`, `(sportsperson)`
+- Science categories → `(scientist)`, `(physicist)`
+- Political categories → `(politician)`, `(leader)`
+
+**2. Primary Image Extraction**
+
+The Wikipedia `pageimages` API returns the main infobox/thumbnail image—this is almost always the most relevant image and is fetched first.
+
+**3. Additional Image Scoring**
+
+For pages with multiple images, each candidate is scored:
+
+| Factor | Score |
+|--------|-------|
+| Each name part in filename | +1 |
+| Full name exact match | +5 |
+| First or last name match | +1 each |
+| Generic content (map, flag, chart, diagram) | -3 |
+
+**4. Filtering**
+
+Images are filtered to exclude:
+- Non-content images (logos, icons, UI elements, signatures)
+- SVG files (except logos)
+- Tiny images (< 100px)
+- Extremely large images (> 5000px)
+
+**5. Result**
+
+Returns up to 3 images along with metadata:
+- `images`: List of image URLs
+- `source_page`: Wikipedia page title used
+- `image_status`: `success` | `no_page_found` | `no_images` | `error`
+
 ## API Endpoints
 
 | Method | Endpoint | Purpose |
