@@ -115,34 +115,53 @@ response = requests.get(url, params=params, headers=headers, timeout=10)
 
 ## Testing
 
-### Manual Testing
-
-No automated test suite currently. Test manually:
+### Running Tests
 
 ```bash
-# Start the app
-python app.py
+# Install test dependencies
+pip install -r requirements-test.txt
 
-# Test suggestions endpoint
-curl http://localhost:5000/api/suggestions
+# Run all tests
+pytest
 
-# Test list generation
-curl -X POST http://localhost:5000/api/generate-list \
-  -H "Content-Type: application/json" \
-  -d '{"category": "European capitals", "count": 10, "language": "en"}'
+# Run with coverage
+pytest --cov=services --cov=app --cov-report=term-missing
 
-# Test item details
-curl -X POST http://localhost:5000/api/get-item-details \
-  -H "Content-Type: application/json" \
-  -d '{"item": "Paris", "category": "European capitals", "properties": ["population"], "language": "en"}'
+# Run only unit tests (no API key needed)
+pytest tests/test_content.py tests/test_gemini.py tests/test_wikipedia.py
+
+# Run integration tests (requires GOOGLE_AI_STUDIO_KEY)
+pytest tests/test_integration.py
 ```
 
-### Key Test Cases
+### Test Structure
 
-1. **JSON parsing**: Test with non-English languages that may produce unquoted values
-2. **Image search**: Test disambiguation (e.g., "Prince" with music category)
-3. **Rate limiting**: Endpoints have per-minute/hour limits
-4. **Input validation**: Category/item names are length-limited
+```
+tests/
+├── conftest.py           # Pytest fixtures (Flask test client)
+├── test_content.py       # Unit tests for markdown/language (21 tests)
+├── test_gemini.py        # Unit tests for JSON parsing (17 tests)
+├── test_wikipedia.py     # Unit tests for Wikipedia helpers (15 tests)
+└── test_integration.py   # Integration tests for API endpoints (14 tests)
+```
+
+### Test Categories
+
+1. **Unit tests** (no external dependencies):
+   - `test_content.py`: Markdown rendering, HTML sanitization, language instructions
+   - `test_gemini.py`: JSON parsing, unquoted value fixing, edge cases
+   - `test_wikipedia.py`: Disambiguation hints, mocked API responses
+
+2. **Integration tests** (require API key):
+   - `test_integration.py`: Full API endpoint tests with real Gemini and Wikipedia calls
+   - Skipped automatically if `GOOGLE_AI_STUDIO_KEY` not set
+
+### Adding New Tests
+
+When adding features, add corresponding tests:
+- Unit tests for pure functions in `services/`
+- Integration tests for API endpoint behavior
+- Use `responses` library to mock HTTP calls in unit tests
 
 ## Common Tasks
 
@@ -207,7 +226,6 @@ gcloud run deploy popquiz --source . --allow-unauthenticated
 
 1. **No database**: Sessions stored in memory, lost on restart
 2. **No auth**: Public API, protected only by rate limiting
-3. **No tests**: Manual testing only
 
 ## Security Considerations
 
