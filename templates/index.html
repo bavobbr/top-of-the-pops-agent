@@ -66,12 +66,12 @@
     <div x-data="popquiz()" x-init="init()" x-cloak class="container mx-auto px-4 py-8 max-w-6xl">
         <!-- Header -->
         <header class="text-center mb-8">
-            <h1 @click="screen = 'input'" class="text-5xl font-retro text-retro-red drop-shadow-[3px_3px_0px_rgba(0,0,0,0.3)] tracking-wide cursor-pointer hover:text-retro-darkred transition-colors">TOP OF THE POPS</h1>
+            <h1 @click="screen = 'input'" class="text-3xl sm:text-4xl md:text-5xl font-retro text-retro-red drop-shadow-[3px_3px_0px_rgba(0,0,0,0.3)] tracking-wide cursor-pointer hover:text-retro-darkred transition-colors">TOP OF THE POPS</h1>
             <p x-show="screen === 'input'" class="text-retro-black mt-2 text-lg">Learn the greats through visual flashcards</p>
         </header>
 
         <!-- Screen 1: Input -->
-        <div x-show="screen === 'input'" x-init="loadSuggestions()" class="bg-white rounded-xl shadow-[5px_5px_0px_0px_rgba(0,0,0,0.2)] border-4 border-retro-black p-8 relative">
+        <div x-show="screen === 'input'" x-init="loadSuggestions()" class="bg-white rounded-xl shadow-[5px_5px_0px_0px_rgba(0,0,0,0.2)] border-4 border-retro-black p-4 md:p-8 relative">
             <!-- About button -->
             <button
                 @click="showAboutModal = true"
@@ -87,18 +87,18 @@
                     <label for="category" class="block text-lg font-bold text-retro-black mb-2">
                         What do you want to study?
                     </label>
-                    <div class="flex gap-3">
+                    <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
                         <input
                             type="text"
                             id="category"
                             x-model="category"
-                            placeholder="e.g., movie stars, car brands, countries..."
-                            class="flex-1 px-4 py-3 border-3 border-retro-black rounded-lg focus:ring-2 focus:ring-retro-red focus:border-retro-red text-lg"
+                            placeholder="e.g., movie stars, car brands..."
+                            class="flex-1 px-3 py-2 md:px-4 md:py-3 border-3 border-retro-black rounded-lg focus:ring-2 focus:ring-retro-red focus:border-retro-red text-base md:text-lg"
                             required
                         >
                         <select
                             x-model="language"
-                            class="px-3 py-3 border-3 border-retro-black rounded-lg bg-white text-retro-black font-bold focus:ring-2 focus:ring-retro-red focus:border-retro-red"
+                            class="px-3 py-2 md:py-3 border-3 border-retro-black rounded-lg bg-white text-retro-black font-bold focus:ring-2 focus:ring-retro-red focus:border-retro-red"
                             title="Response language"
                         >
                             <option value="en">English</option>
@@ -194,32 +194,32 @@
             </div>
 
             <!-- Navigation buttons -->
-            <div class="flex flex-wrap gap-3 justify-center">
+            <div class="flex flex-wrap gap-2 md:gap-3 justify-center">
                 <button
                     @click="loadNextItem"
                     :disabled="loadingItem"
-                    class="bg-retro-red hover:bg-retro-darkred disabled:bg-red-300 text-white font-bold py-2 px-6 rounded-lg transition duration-200 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] border-2 border-retro-black uppercase"
+                    class="bg-retro-red hover:bg-retro-darkred disabled:bg-red-300 text-white font-bold py-1.5 px-3 md:py-2 md:px-6 rounded-lg transition duration-200 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] md:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] border-2 border-retro-black uppercase text-sm md:text-base"
                 >
                     Next
                 </button>
                 <button
                     @click="loadRandomItem"
                     :disabled="loadingItem"
-                    class="bg-retro-orange hover:bg-retro-yellow text-retro-black font-bold py-2 px-6 rounded-lg transition duration-200 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] border-2 border-retro-black uppercase"
+                    class="bg-retro-orange hover:bg-retro-yellow text-retro-black font-bold py-1.5 px-3 md:py-2 md:px-6 rounded-lg transition duration-200 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] md:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] border-2 border-retro-black uppercase text-sm md:text-base"
                 >
                     Random
                 </button>
                 <button
                     @click="showListModal = true"
-                    class="bg-retro-yellow hover:bg-retro-orange text-retro-black border-2 border-retro-black font-bold py-2 px-6 rounded-lg transition duration-200 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] uppercase"
+                    class="bg-retro-yellow hover:bg-retro-orange text-retro-black border-2 border-retro-black font-bold py-1.5 px-3 md:py-2 md:px-6 rounded-lg transition duration-200 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] md:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] uppercase text-sm md:text-base"
                 >
-                    View All Items
+                    <span class="hidden sm:inline">View All</span><span class="sm:hidden">All</span>
                 </button>
                 <button
                     @click="startNewQuiz"
-                    class="bg-white hover:bg-retro-cream text-retro-black border-2 border-retro-black font-bold py-2 px-6 rounded-lg transition duration-200 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] uppercase"
+                    class="bg-white hover:bg-retro-cream text-retro-black border-2 border-retro-black font-bold py-1.5 px-3 md:py-2 md:px-6 rounded-lg transition duration-200 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] md:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] uppercase text-sm md:text-base"
                 >
-                    New Quiz
+                    New
                 </button>
             </div>
 
@@ -246,13 +246,13 @@
                 <!-- Item content - side by side layout (show when we have content) -->
                 <div x-show="currentItem" class="flex flex-col lg:flex-row" :class="loadingItem ? 'opacity-60' : ''">
                     <!-- Image section - left side -->
-                    <div class="lg:w-3/5 bg-retro-black p-4">
+                    <div class="lg:w-3/5 bg-retro-black p-2 md:p-4">
                         <!-- Main large image -->
                         <div x-show="currentItem.images && currentItem.images.length > 0">
                             <div class="relative">
                                 <div
                                     @click="if (currentItem.images.length > 1) selectedImageIndex = (selectedImageIndex + 1) % currentItem.images.length"
-                                    class="h-[500px] mb-3 rounded-xl bg-retro-black border-4 border-retro-red bg-contain bg-center bg-no-repeat"
+                                    class="h-[280px] sm:h-[350px] lg:h-[500px] mb-2 md:mb-3 rounded-xl bg-retro-black border-4 border-retro-red bg-contain bg-center bg-no-repeat"
                                     :class="currentItem.images.length > 1 ? 'cursor-pointer' : ''"
                                     :style="'background-image: url(' + (currentItem.images[selectedImageIndex] || currentItem.images[0]) + ')'"
                                 ></div>
@@ -266,14 +266,14 @@
                             </div>
 
                             <!-- Thumbnail strip -->
-                            <div x-show="currentItem.images.length > 1" class="flex justify-center items-center gap-3">
+                            <div x-show="currentItem.images.length > 1" class="flex justify-center items-center gap-2 md:gap-3">
                                 <template x-for="(img, index) in currentItem.images" :key="'thumb-'+index">
                                     <button
                                         @click="selectedImageIndex = index"
                                         class="relative overflow-hidden rounded-lg transition-all duration-300 focus:outline-none border-2"
                                         :class="selectedImageIndex === index
-                                            ? 'w-20 h-20 border-retro-yellow shadow-xl scale-110 z-10'
-                                            : 'w-14 h-14 border-retro-red opacity-60 hover:opacity-90 hover:scale-105'"
+                                            ? 'w-14 h-14 md:w-20 md:h-20 border-retro-yellow shadow-xl scale-110 z-10'
+                                            : 'w-10 h-10 md:w-14 md:h-14 border-retro-red opacity-60 hover:opacity-90 hover:scale-105'"
                                     >
                                         <img
                                             :src="img"
@@ -287,29 +287,29 @@
                         </div>
 
                         <!-- No images placeholder -->
-                        <div x-show="!currentItem.images || currentItem.images.length === 0" class="h-[500px] flex items-center justify-center bg-retro-darkred rounded-xl border-4 border-retro-red">
-                            <span class="text-9xl text-white opacity-30 font-retro" x-text="currentItem.name ? currentItem.name.charAt(0) : '?'"></span>
+                        <div x-show="!currentItem.images || currentItem.images.length === 0" class="h-[280px] sm:h-[350px] lg:h-[500px] flex items-center justify-center bg-retro-darkred rounded-xl border-4 border-retro-red">
+                            <span class="text-6xl md:text-9xl text-white opacity-30 font-retro" x-text="currentItem.name ? currentItem.name.charAt(0) : '?'"></span>
                         </div>
                     </div>
 
                     <!-- Details section - right side -->
-                    <div class="lg:w-2/5 p-6 flex flex-col bg-retro-cream">
-                        <div class="flex items-start justify-between mb-4">
-                            <h2 class="text-2xl font-retro text-retro-black" x-text="currentItem.name"></h2>
+                    <div class="lg:w-2/5 p-4 md:p-6 flex flex-col bg-retro-cream">
+                        <div class="flex items-start justify-between mb-3 md:mb-4">
+                            <h2 class="text-xl md:text-2xl font-retro text-retro-black" x-text="currentItem.name"></h2>
                             <span class="bg-retro-red text-white text-sm font-bold px-3 py-1 rounded-full flex-shrink-0 ml-2 border-2 border-retro-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)]">
                                 #<span x-text="currentItemIndex + 1"></span>
                             </span>
                         </div>
 
-                        <p class="text-retro-black mb-6" x-html="currentItem.description"></p>
+                        <p class="text-sm md:text-base text-retro-black mb-4 md:mb-6" x-html="currentItem.description"></p>
 
                         <!-- Properties -->
                         <div x-show="currentItem.properties" class="flex-1">
-                            <dl class="space-y-3">
+                            <dl class="space-y-2 md:space-y-3">
                                 <template x-for="(value, key) in currentItem.properties" :key="key">
-                                    <div class="bg-white rounded-lg p-3 border-2 border-retro-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)]">
+                                    <div class="bg-white rounded-lg p-2 md:p-3 border-2 border-retro-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)]">
                                         <dt class="text-xs font-bold text-retro-red uppercase" x-text="key.replace(/_/g, ' ')"></dt>
-                                        <dd class="mt-1 text-retro-black">
+                                        <dd class="mt-1 text-sm md:text-base text-retro-black">
                                             <!-- Render as list if array -->
                                             <template x-if="Array.isArray(value)">
                                                 <ul class="list-disc list-inside space-y-1">
