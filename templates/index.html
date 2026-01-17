@@ -36,7 +36,7 @@
         <!-- Header -->
         <header class="text-center mb-8">
             <h1 class="text-5xl font-retro text-retro-red drop-shadow-[3px_3px_0px_rgba(0,0,0,0.3)] tracking-wide">TOP OF THE POPS</h1>
-            <p class="text-retro-black mt-2 text-lg">Learn the greats through visual flashcards</p>
+            <p x-show="screen === 'input'" class="text-retro-black mt-2 text-lg">Learn the greats through visual flashcards</p>
         </header>
 
         <!-- Screen 1: Input -->
@@ -261,8 +261,7 @@
                         <p class="text-retro-black mb-6" x-html="currentItem.description"></p>
 
                         <!-- Properties -->
-                        <div x-show="currentItem.properties" class="border-t-2 border-retro-black pt-4 flex-1">
-                            <h3 class="text-sm font-bold text-retro-red uppercase tracking-wider mb-3">Details</h3>
+                        <div x-show="currentItem.properties" class="flex-1">
                             <dl class="space-y-3">
                                 <template x-for="(value, key) in currentItem.properties" :key="key">
                                     <div class="bg-white rounded-lg p-3 border-2 border-retro-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)]">
@@ -287,7 +286,7 @@
                         </div>
 
                         <!-- Wikipedia link -->
-                        <div x-show="currentItem.image_source" class="mt-4 pt-4 border-t-2 border-retro-black">
+                        <div x-show="currentItem.image_source" class="mt-4">
                             <a
                                 :href="'https://en.wikipedia.org/wiki/' + encodeURIComponent(currentItem.image_source.replace(/ /g, '_'))"
                                 target="_blank"
