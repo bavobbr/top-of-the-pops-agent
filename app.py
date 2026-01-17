@@ -40,6 +40,32 @@ def ratelimit_handler(e):
         'retry_after': e.description
     }), 429
 
+
+@app.before_request
+def check_origin():
+    """Block cross-origin requests to API endpoints."""
+    if request.path.startswith('/api/'):
+        origin = request.headers.get('Origin')
+        # If Origin header is present, it's a cross-origin request
+        if origin:
+            # Get the host from the request
+            host = request.host_url.rstrip('/')
+            if origin != host:
+                return jsonify({
+                    'error': 'forbidden',
+                    'message': 'Cross-origin requests are not allowed'
+                }), 403
+
+
+@app.after_request
+def set_security_headers(response):
+    """Set security headers to prevent cross-origin access."""
+    # Prevent embedding in iframes from other origins
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    # Enable XSS protection
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    return response
+
 # Configure Gemini
 genai.configure(api_key=os.getenv('GOOGLE_AI_STUDIO_KEY'))
 model = genai.GenerativeModel('gemini-2.0-flash')
