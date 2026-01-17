@@ -700,12 +700,19 @@ def get_item_details():
     properties_str = ', '.join(properties) if properties else 'relevant characteristics'
     language_instruction = get_language_instruction(language)
 
+    # For non-English languages, request English equivalents for image search
+    english_fields_instruction = ""
+    if language != 'en':
+        english_fields_instruction = """
+- "english_name": The standard English name for this item (for image lookup)
+- "english_category": The English translation of the category context"""
+
     prompt = f"""Provide details about "{item}" in the context of {category}.
 
 Return a JSON object with:
 - "name": Full/official name
 - "description": 2-3 sentence summary
-- "properties": Object with values for each of: {properties_str}
+- "properties": Object with values for each of: {properties_str}{english_fields_instruction}
 
 IMPORTANT JSON RULES:
 1. ALL string values MUST be in double quotes, including dates, years, and descriptions
@@ -743,8 +750,10 @@ Be concise and factual. Return ONLY valid JSON.{language_instruction}"""
         # Render markdown in description and properties
         render_markdown_in_result(result)
 
-        # Fetch Wikipedia images with category context for better disambiguation
-        image_result = fetch_wikipedia_images(item, category=category)
+        # Fetch Wikipedia images using English names for better results
+        search_name = result.pop('english_name', None) or item
+        search_category = result.pop('english_category', None) or category
+        image_result = fetch_wikipedia_images(search_name, category=search_category)
         result['images'] = image_result['images']
         result['image_status'] = image_result['status']
         result['image_source'] = image_result.get('source_page')
