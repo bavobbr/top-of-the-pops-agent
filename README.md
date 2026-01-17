@@ -6,9 +6,11 @@ An AI-powered visual learning application that helps users study ranked lists ac
 
 - **Dynamic Quiz Generation**: Select any category (movie stars, car brands, Nobel Prize winners, etc.) and specify how many items to study (5-50)
 - **AI-Generated Content**: Uses Google's Gemini 2.0 Flash model to create ranked lists with contextually relevant properties
+- **Multi-Language Support**: Content available in 20 languages (English, Spanish, French, German, Dutch, Japanese, Chinese, and more)
 - **Visual Flashcards**: Displays items with up to 3 images fetched from Wikipedia, descriptions, and structured facts
 - **Interactive Navigation**: Browse items sequentially, randomly, or via an item list modal
 - **Smart Image Selection**: Intelligent Wikipedia image fetching with category-aware disambiguation
+- **URL Sharing**: Share quizzes via URL parameters (category, count, language)
 - **Session Caching**: Caches item details per session for performance
 - **AI Category Suggestions**: Provides 20 diverse category ideas on the home screen
 - **Markdown Rendering**: AI-generated content rendered with proper formatting (bold, italics, lists)
@@ -18,9 +20,10 @@ An AI-powered visual learning application that helps users study ranked lists ac
 
 ### Backend
 - **Framework**: Flask 3.0.0
-- **AI**: Google Generative AI (Gemini 2.0 Flash)
-- **External APIs**: Wikipedia API
+- **AI**: Google Generative AI (Gemini 2.0 Flash) with JSON schema enforcement
+- **External APIs**: Wikipedia API (English)
 - **Content Processing**: Markdown + Bleach (server-side rendering with HTML sanitization)
+- **JSON Parsing**: json5 fallback for lenient parsing of AI responses
 - **Runtime**: Python 3.11
 
 ### Frontend
@@ -95,12 +98,17 @@ sequenceDiagram
         B-->>F: Return cached result
     else Not cached
         B->>G: Generate item details
-        G-->>B: {name, description, properties}
+        alt Non-English language
+            G-->>B: {name, description, properties, english_name, english_category}
+            Note over B: Extract English fields for image search
+        else English
+            G-->>B: {name, description, properties}
+        end
 
         Note over B: Render markdown to HTML
         Note over B: Sanitize with Bleach
 
-        par Wikipedia Image Fetch
+        par Wikipedia Image Fetch (using English names)
             B->>W: Search for page (multi-strategy)
             W-->>B: Page title
             B->>W: Get primary image (pageimages API)
@@ -121,7 +129,11 @@ sequenceDiagram
 
 ### Wikipedia Image Algorithm
 
-The app uses a multi-stage algorithm to fetch relevant images from Wikipedia:
+The app uses a multi-stage algorithm to fetch relevant images from English Wikipedia:
+
+**0. Language Handling**
+
+For non-English content, item names are translated (e.g., "Paris" → "Parijs" in Dutch). Since we use English Wikipedia for the best image coverage, the AI provides English equivalents (`english_name`, `english_category`) which are used for image search while keeping displayed content in the user's language.
 
 **1. Page Discovery (Disambiguation)**
 
@@ -240,11 +252,25 @@ gcloud run deploy popquiz --source . --allow-unauthenticated
 ## Usage
 
 1. Enter a category (e.g., "greatest rock bands of all time") or select from AI suggestions
-2. Adjust the slider to choose how many items (5-50)
-3. Click "Generate Quiz" to create the study set
-4. Browse through items using Next/Random buttons or the item list
-5. View images, descriptions, and properties for each item
-6. Start a new quiz anytime with the "New Quiz" button
+2. Choose your preferred language from the dropdown (20 languages available)
+3. Adjust the slider to choose how many items (5-50)
+4. Click "Generate Quiz" to create the study set
+5. Browse through items using Next/Random buttons or the item list
+6. View images, descriptions, and properties for each item
+7. Share your quiz using the URL (automatically updated with category, count, and language)
+8. Start a new quiz anytime with the "New Quiz" button
+
+### URL Sharing
+
+Quizzes can be shared via URL parameters:
+```
+https://yourapp.com/?category=European%20capitals&count=10&lang=nl
+```
+
+Parameters:
+- `category`: The quiz category
+- `count`: Number of items (5-50)
+- `lang`: Language code (optional, defaults to `en`)
 
 ## License
 
