@@ -210,7 +210,9 @@
                         <div x-show="currentItem.images && currentItem.images.length > 0">
                             <div class="relative">
                                 <div
+                                    @click="if (currentItem.images.length > 1) selectedImageIndex = (selectedImageIndex + 1) % currentItem.images.length"
                                     class="h-[500px] mb-3 rounded-xl bg-retro-black border-4 border-retro-red bg-contain bg-center bg-no-repeat"
+                                    :class="currentItem.images.length > 1 ? 'cursor-pointer' : ''"
                                     :style="'background-image: url(' + (currentItem.images[selectedImageIndex] || currentItem.images[0]) + ')'"
                                 ></div>
                                 <!-- Wikipedia source overlay -->
