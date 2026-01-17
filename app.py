@@ -1,5 +1,6 @@
 import os
 import json
+import json5
 import uuid
 import re
 import time
@@ -71,11 +72,60 @@ def set_security_headers(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
 
-# Configure Gemini with JSON response mode
+# Configure Gemini
 genai.configure(api_key=os.getenv('GOOGLE_AI_STUDIO_KEY'))
-model = genai.GenerativeModel(
+
+# Schema for category suggestions
+SUGGESTIONS_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "suggestions": {
+            "type": "array",
+            "items": {"type": "string"}
+        }
+    },
+    "required": ["suggestions"]
+}
+
+# Schema for generating a list of items
+LIST_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "items": {
+            "type": "array",
+            "items": {"type": "string"}
+        },
+        "properties": {
+            "type": "array",
+            "items": {"type": "string"}
+        }
+    },
+    "required": ["items", "properties"]
+}
+
+# Create models with specific schemas
+model_suggestions = genai.GenerativeModel(
     'gemini-2.0-flash',
-    generation_config={"response_mime_type": "application/json"}
+    generation_config={
+        "response_mime_type": "application/json",
+        "response_schema": SUGGESTIONS_SCHEMA
+    }
+)
+
+model_list = genai.GenerativeModel(
+    'gemini-2.0-flash',
+    generation_config={
+        "response_mime_type": "application/json",
+        "response_schema": LIST_SCHEMA
+    }
+)
+
+# Details model uses JSON mode without schema (dynamic properties)
+model_details = genai.GenerativeModel(
+    'gemini-2.0-flash',
+    generation_config={
+        "response_mime_type": "application/json"
+    }
 )
 
 # In-memory session storage
@@ -145,94 +195,6 @@ def get_session_data():
         sessions[session_id]['last_access'] = now
 
     return sessions[session_id]['data']
-
-
-def fix_json_string(text):
-    """Fix common JSON issues from LLM responses."""
-    # Remove trailing commas before } or ]
-    text = re.sub(r',\s*([}\]])', r'\1', text)
-
-    # Fix unescaped newlines inside strings (replace with \n)
-    # This regex finds strings and escapes newlines within them
-    def escape_newlines_in_string(match):
-        s = match.group(0)
-        # Replace actual newlines with escaped newlines inside the string
-        return s.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
-
-    # Match JSON strings (handling escaped quotes)
-    text = re.sub(r'"(?:[^"\\]|\\.)*"', escape_newlines_in_string, text)
-
-    return text
-
-
-def parse_json_response(text):
-    """Extract JSON from Gemini response, handling markdown code blocks and common issues."""
-    original_text = text  # Keep for error logging
-
-    # Try to find JSON in code blocks first
-    code_block_match = re.search(r'```(?:json)?\s*([\s\S]*?)```', text)
-    if code_block_match:
-        text = code_block_match.group(1)
-
-    # Clean up the text
-    text = text.strip()
-
-    # Find JSON object or array
-    start_idx = text.find('{')
-    if start_idx == -1:
-        start_idx = text.find('[')
-    if start_idx != -1:
-        text = text[start_idx:]
-
-    # Try parsing as-is first
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        pass
-
-    # Fix common JSON issues from LLMs
-    fixed_text = fix_json_string(text)
-
-    # Try again with fixes
-    try:
-        return json.loads(fixed_text)
-    except json.JSONDecodeError:
-        pass
-
-    # Try to find and extract just the JSON object/array with balanced brackets
-    depth = 0
-    start = -1
-    end = -1
-    bracket_type = None
-
-    for i, char in enumerate(text):
-        if char in '{[' and start == -1:
-            start = i
-            bracket_type = '}' if char == '{' else ']'
-            depth = 1
-        elif start != -1:
-            if char == text[start]:
-                depth += 1
-            elif char == bracket_type:
-                depth -= 1
-                if depth == 0:
-                    end = i + 1
-                    break
-
-    if start != -1 and end != -1:
-        extracted = text[start:end]
-        extracted = fix_json_string(extracted)
-        try:
-            return json.loads(extracted)
-        except json.JSONDecodeError as e:
-            # Log the problematic response for debugging
-            print(f"JSON parse error: {e}")
-            print(f"Problematic text (first 500 chars): {extracted[:500]}")
-            raise
-
-    # Last resort: raise the original error with logging
-    print(f"Failed to parse JSON from response (first 500 chars): {original_text[:500]}")
-    return json.loads(text)
 
 
 # Allowed HTML tags and attributes for sanitized markdown output
@@ -634,8 +596,8 @@ Make them fun, educational, and varied. Keep each suggestion concise (2-6 words)
 Return ONLY the JSON object, no markdown."""
 
     try:
-        response = model.generate_content(prompt)
-        result = parse_json_response(response.text)
+        response = model_suggestions.generate_content(prompt)
+        result = json.loads(response.text)
         suggestions_cache = result.get('suggestions', [])[:20]
         return jsonify({'suggestions': suggestions_cache})
 
@@ -688,8 +650,8 @@ Examples by category:
 Be factual and use commonly accepted rankings. Return ONLY the JSON object, no markdown or other text.{language_instruction}"""
 
     try:
-        response = model.generate_content(prompt)
-        result = parse_json_response(response.text)
+        response = model_list.generate_content(prompt)
+        result = json.loads(response.text)
 
         # Store in session
         session_data = get_session_data()
@@ -745,15 +707,38 @@ Return a JSON object with:
 - "description": 2-3 sentence summary
 - "properties": Object with values for each of: {properties_str}
 
-IMPORTANT: For properties that represent multiple items (like notable_works, top_songs, famous_movies, popular_models, key_achievements, etc.), return them as JSON arrays with 3-5 items, not comma-separated strings.
+IMPORTANT JSON RULES:
+1. ALL string values MUST be in double quotes, including dates, years, and descriptions
+2. For properties with multiple items (like notable_works, top_songs), use JSON arrays: ["Item 1", "Item 2", "Item 3"]
+3. Never use unquoted values - even "9th century" must be "9th century" in quotes
 
-Example: "notable_works": ["Work 1", "Work 2", "Work 3"]
-
-Be concise and factual. Return ONLY valid JSON, no other text.{language_instruction}"""
+Be concise and factual. Return ONLY valid JSON.{language_instruction}"""
 
     try:
-        response = model.generate_content(prompt)
-        result = parse_json_response(response.text)
+        response = model_details.generate_content(prompt)
+
+        # Try standard JSON first, fall back to fixup + json5 for malformed responses
+        try:
+            result = json.loads(response.text)
+        except json.JSONDecodeError:
+            # Fix unquoted values that contain letters (e.g., "9e eeuw", "circa 1500")
+            fixed = response.text
+            # Pass 1: Fix values ending with , } or ]
+            fixed = re.sub(
+                r':\s*(?!["\[\{])([^,}\]"\n]*[a-zA-Z][^,}\]"\n]*?)([,}\]])',
+                r': "\1"\2',
+                fixed
+            )
+            # Pass 2: Fix values at end of line before closing brace
+            fixed = re.sub(
+                r':\s*(?!["\[\{])([^,}\]"\n]*[a-zA-Z][^,}\]"\n]*?)\s*\n(\s*[}\]])',
+                r': "\1"\n\2',
+                fixed
+            )
+            try:
+                result = json.loads(fixed)
+            except json.JSONDecodeError:
+                result = json5.loads(fixed)
 
         # Render markdown in description and properties
         render_markdown_in_result(result)
@@ -769,7 +754,11 @@ Be concise and factual. Return ONLY valid JSON, no other text.{language_instruct
 
         return jsonify(result)
 
+    except (json.JSONDecodeError, ValueError) as e:
+        # ValueError covers json5 parse errors
+        return jsonify({'error': f'Failed to parse AI response: {e}'}), 500
     except Exception as e:
+        print(f"Error getting details for '{item}': {e}")
         return jsonify({'error': str(e)}), 500
 
 
