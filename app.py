@@ -2,8 +2,11 @@ import os
 import json
 import uuid
 import re
+import time
 import requests
 from flask import Flask, render_template, request, jsonify, session
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 import google.generativeai as genai
 
@@ -12,28 +15,102 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
+# Rate limiting configuration
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["100 per hour"],
+    storage_uri="memory://",
+)
+
+# Session management configuration
+SESSION_EXPIRY_SECONDS = 3600  # 1 hour
+MAX_SESSIONS_PER_IP = 5
+MAX_TOTAL_SESSIONS = 1000
+CLEANUP_INTERVAL = 100  # Run cleanup every N requests
+request_counter = 0
+
+
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    """Return JSON error for rate limit exceeded."""
+    return jsonify({
+        'error': 'rate_limit_exceeded',
+        'message': "You're going too fast! Please wait a moment before trying again.",
+        'retry_after': e.description
+    }), 429
+
 # Configure Gemini
 genai.configure(api_key=os.getenv('GOOGLE_AI_STUDIO_KEY'))
 model = genai.GenerativeModel('gemini-2.0-flash')
 
 # In-memory session storage
+# Structure: {session_id: {'data': {...}, 'ip': '...', 'created_at': timestamp, 'last_access': timestamp}}
 sessions = {}
+
+
+def cleanup_sessions():
+    """Remove expired sessions and enforce limits."""
+    global sessions
+    now = time.time()
+
+    # Remove expired sessions
+    expired = [sid for sid, s in sessions.items()
+               if now - s['last_access'] > SESSION_EXPIRY_SECONDS]
+    for sid in expired:
+        del sessions[sid]
+
+    # If still over limit, remove oldest sessions
+    if len(sessions) > MAX_TOTAL_SESSIONS:
+        sorted_sessions = sorted(sessions.items(), key=lambda x: x[1]['last_access'])
+        to_remove = len(sessions) - MAX_TOTAL_SESSIONS
+        for sid, _ in sorted_sessions[:to_remove]:
+            del sessions[sid]
 
 
 def get_session_data():
     """Get or create session data for current user."""
+    global request_counter
+
+    # Periodic cleanup
+    request_counter += 1
+    if request_counter >= CLEANUP_INTERVAL:
+        request_counter = 0
+        cleanup_sessions()
+
+    client_ip = get_remote_address()
+    now = time.time()
+
     if 'session_id' not in session:
+        # Check if IP has too many sessions
+        ip_sessions = [s for s in sessions.values() if s['ip'] == client_ip]
+        if len(ip_sessions) >= MAX_SESSIONS_PER_IP:
+            # Remove oldest session for this IP
+            oldest = min(ip_sessions, key=lambda x: x['last_access'])
+            oldest_id = next(sid for sid, s in sessions.items() if s is oldest)
+            del sessions[oldest_id]
+
         session['session_id'] = str(uuid.uuid4())
 
     session_id = session['session_id']
+
     if session_id not in sessions:
         sessions[session_id] = {
-            'category': None,
-            'items': [],
-            'properties': [],
-            'details_cache': {}
+            'data': {
+                'category': None,
+                'items': [],
+                'properties': [],
+                'details_cache': {}
+            },
+            'ip': client_ip,
+            'created_at': now,
+            'last_access': now
         }
-    return sessions[session_id]
+    else:
+        # Update last access time
+        sessions[session_id]['last_access'] = now
+
+    return sessions[session_id]['data']
 
 
 def parse_json_response(text):
@@ -196,6 +273,7 @@ suggestions_cache = []
 
 
 @app.route('/api/suggestions')
+@limiter.limit("10 per minute")
 def get_suggestions():
     """Get AI-generated quiz category suggestions."""
     global suggestions_cache
@@ -239,14 +317,19 @@ Return ONLY the JSON object, no markdown."""
 
 
 @app.route('/api/generate-list', methods=['POST'])
+@limiter.limit("5 per minute")
+@limiter.limit("20 per hour")
 def generate_list():
     """Generate a ranked list of items for the given category."""
     data = request.json
-    category = data.get('category', '')
+    category = data.get('category', '')[:200]  # Max 200 chars
     count = min(max(int(data.get('count', 10)), 1), 100)
 
     if not category:
         return jsonify({'error': 'Category is required'}), 400
+
+    if len(category.strip()) < 2:
+        return jsonify({'error': 'Category must be at least 2 characters'}), 400
 
     prompt = f"""You are helping create a study guide. The user wants to learn the top {count} {category}.
 
@@ -283,15 +366,19 @@ Be factual and use commonly accepted rankings. Return ONLY the JSON object, no m
 
 
 @app.route('/api/get-item-details', methods=['POST'])
+@limiter.limit("30 per minute")
 def get_item_details():
     """Get details for a specific item including images."""
     data = request.json
-    item = data.get('item', '')
-    category = data.get('category', '')
-    properties = data.get('properties', [])
+    item = data.get('item', '')[:200]  # Max 200 chars
+    category = data.get('category', '')[:200]  # Max 200 chars
+    properties = data.get('properties', [])[:10]  # Max 10 properties
 
     if not item:
         return jsonify({'error': 'Item is required'}), 400
+
+    # Validate properties are strings and not too long
+    properties = [str(p)[:50] for p in properties if isinstance(p, str)]
 
     session_data = get_session_data()
 

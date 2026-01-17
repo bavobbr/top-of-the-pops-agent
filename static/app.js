@@ -29,6 +29,10 @@ function popquiz() {
             try {
                 const response = await fetch('/api/suggestions');
                 const data = await response.json();
+                if (response.status === 429) {
+                    console.warn('Rate limited on suggestions');
+                    return;
+                }
                 this.suggestions = data.suggestions || [];
             } catch (err) {
                 console.error('Failed to load suggestions:', err);
@@ -52,6 +56,10 @@ function popquiz() {
                 });
 
                 const data = await response.json();
+
+                if (response.status === 429) {
+                    throw new Error(data.message || "You're going too fast! Please wait a moment before trying again.");
+                }
 
                 if (!response.ok) {
                     throw new Error(data.error || 'Failed to generate list');
@@ -92,11 +100,17 @@ function popquiz() {
 
                 const data = await response.json();
 
+                if (response.status === 429) {
+                    this.error = data.message || "You're going too fast! Please wait a moment before trying again.";
+                    return;
+                }
+
                 if (!response.ok) {
                     throw new Error(data.error || 'Failed to load item details');
                 }
 
                 this.currentItem = data;
+                this.error = null;
 
             } catch (err) {
                 this.currentItem = {

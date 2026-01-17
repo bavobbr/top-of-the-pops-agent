@@ -114,6 +114,16 @@
 
         <!-- Screen 2: Study -->
         <div x-show="screen === 'study'" class="space-y-6">
+            <!-- Rate limit / error banner -->
+            <div x-show="error" x-transition class="p-4 bg-retro-red/20 text-retro-darkred rounded-lg border-2 border-retro-red font-bold flex items-center justify-between">
+                <span x-text="error"></span>
+                <button @click="error = null" class="ml-4 text-retro-darkred hover:text-retro-red">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
             <!-- Navigation buttons -->
             <div class="flex flex-wrap gap-3 justify-center">
                 <button
