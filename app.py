@@ -8,7 +8,7 @@ from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 
 from services.sessions import get_session_data
-from services.gemini import generate_suggestions, generate_item_list, generate_item_details
+from services.gemini import generate_suggestions, generate_subcategories, generate_item_list, generate_item_details
 from services.wikipedia import fetch_wikipedia_images
 from services.content import get_language_instruction, render_markdown_in_result
 
@@ -94,6 +94,55 @@ def get_suggestions():
             "Marvel superheroes", "world cuisines", "space missions", "dog breeds"
         ]
         return jsonify({'suggestions': fallback})
+
+
+# 10 broad quiz categories for category exploration
+BROAD_CATEGORIES = [
+    "Science", "History", "Music", "Film & TV", "Sports",
+    "Geography", "Art & Literature", "Technology", "Food & Drink", "Pop Culture"
+]
+
+
+@app.route('/api/broad-categories')
+def get_broad_categories():
+    """Get the list of broad categories for exploration."""
+    return jsonify({'categories': BROAD_CATEGORIES})
+
+
+@app.route('/api/subcategories', methods=['POST'])
+@limiter.limit("20 per minute")
+def get_subcategories():
+    """Get AI-generated subcategory suggestions for a broad category."""
+    data = request.json
+    category = data.get('category', '')[:100]
+
+    if not category:
+        return jsonify({'error': 'Category is required'}), 400
+
+    if category not in BROAD_CATEGORIES:
+        return jsonify({'error': 'Invalid broad category'}), 400
+
+    session_data = get_session_data()
+
+    # Initialize subcategory cache if needed
+    if 'subcategory_cache' not in session_data:
+        session_data['subcategory_cache'] = {}
+
+    # Check cache
+    if category in session_data['subcategory_cache']:
+        return jsonify({'suggestions': session_data['subcategory_cache'][category]})
+
+    try:
+        result = generate_subcategories(category)
+        suggestions = result.get('suggestions', [])[:10]
+
+        # Cache per session
+        session_data['subcategory_cache'][category] = suggestions
+
+        return jsonify({'suggestions': suggestions})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/generate-list', methods=['POST'])

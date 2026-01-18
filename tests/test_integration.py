@@ -200,6 +200,60 @@ class TestGetItemDetailsEndpoint:
         assert response1.get_json() == response2.get_json()
 
 
+class TestBroadCategoriesEndpoint:
+    """Tests for /api/broad-categories endpoint."""
+
+    def test_broad_categories_returns_list(self, client):
+        """Should return a list of broad categories."""
+        response = client.get('/api/broad-categories')
+        assert response.status_code == 200
+
+        data = response.get_json()
+        assert 'categories' in data
+        assert isinstance(data['categories'], list)
+        assert len(data['categories']) == 10
+
+    def test_broad_categories_are_strings(self, client):
+        """All categories should be strings."""
+        response = client.get('/api/broad-categories')
+        data = response.get_json()
+
+        for category in data['categories']:
+            assert isinstance(category, str)
+            assert len(category) > 0
+
+
+class TestSubcategoriesEndpoint:
+    """Integration tests for /api/subcategories endpoint."""
+
+    def test_subcategories_returns_suggestions(self, client):
+        """Should return subcategory suggestions for a valid broad category."""
+        response = client.post('/api/subcategories', json={
+            'category': 'Science'
+        })
+        assert response.status_code == 200
+
+        data = response.get_json()
+        assert 'suggestions' in data
+        assert isinstance(data['suggestions'], list)
+        assert len(data['suggestions']) == 10
+
+    def test_subcategories_invalid_category(self, client):
+        """Should return error for invalid broad category."""
+        response = client.post('/api/subcategories', json={
+            'category': 'Invalid Category'
+        })
+        assert response.status_code == 400
+
+        data = response.get_json()
+        assert 'error' in data
+
+    def test_subcategories_missing_category(self, client):
+        """Should return error for missing category."""
+        response = client.post('/api/subcategories', json={})
+        assert response.status_code == 400
+
+
 class TestSecurityHeaders:
     """Tests for security headers."""
 

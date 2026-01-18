@@ -21,7 +21,14 @@ function popquiz() {
         // UI
         showListModal: false,
         showAboutModal: false,
+        showSubcategoriesModal: false,
         selectedImageIndex: 0,
+
+        // Broad categories
+        broadCategories: [],
+        selectedBroadCategory: '',
+        subcategories: [],
+        loadingSubcategories: false,
 
         // Initialize - check URL params for shared quiz
         init() {
@@ -29,6 +36,9 @@ function popquiz() {
             const sharedCategory = params.get('category');
             const sharedCount = params.get('count');
             const sharedLang = params.get('lang');
+
+            // Load broad categories
+            this.loadBroadCategories();
 
             if (sharedCategory) {
                 this.category = sharedCategory;
@@ -72,6 +82,49 @@ function popquiz() {
             } finally {
                 this.loadingSuggestions = false;
             }
+        },
+
+        async loadBroadCategories() {
+            try {
+                const response = await fetch('/api/broad-categories');
+                const data = await response.json();
+                this.broadCategories = data.categories || [];
+            } catch (err) {
+                console.error('Failed to load broad categories:', err);
+            }
+        },
+
+        async openSubcategoriesModal(broadCategory) {
+            this.selectedBroadCategory = broadCategory;
+            this.subcategories = [];
+            this.showSubcategoriesModal = true;
+            this.loadingSubcategories = true;
+
+            try {
+                const response = await fetch('/api/subcategories', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ category: broadCategory })
+                });
+
+                const data = await response.json();
+
+                if (response.status === 429) {
+                    this.subcategories = [];
+                    return;
+                }
+
+                this.subcategories = data.suggestions || [];
+            } catch (err) {
+                console.error('Failed to load subcategories:', err);
+            } finally {
+                this.loadingSubcategories = false;
+            }
+        },
+
+        selectSubcategory(subcategory) {
+            this.category = subcategory;
+            this.showSubcategoriesModal = false;
         },
 
         async generateList() {

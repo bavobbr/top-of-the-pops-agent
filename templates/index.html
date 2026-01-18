@@ -142,6 +142,21 @@
                     <div x-show="loadingSuggestions" class="mt-4 text-sm text-retro-black">
                         Loading suggestions...
                     </div>
+
+                    <!-- Broad category chips -->
+                    <div x-show="broadCategories.length > 0" class="mt-6 pt-4 border-t-2 border-retro-black/20">
+                        <p class="text-sm font-bold text-retro-black mb-2">Explore by category:</p>
+                        <div class="flex flex-wrap gap-2">
+                            <template x-for="(cat, index) in broadCategories" :key="'broad-'+index">
+                                <button
+                                    type="button"
+                                    @click="openSubcategoriesModal(cat)"
+                                    class="px-3 py-1.5 text-sm font-bold rounded-lg border-2 border-retro-black bg-retro-yellow text-retro-black transition-all duration-200 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-retro-orange"
+                                    x-text="cat"
+                                ></button>
+                            </template>
+                        </div>
+                    </div>
                 </div>
 
                 <div>
@@ -472,6 +487,69 @@
                                 </svg>
                                 github.com/bavobbr/top-of-the-pops-agent
                             </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subcategories Modal -->
+        <div
+            x-show="showSubcategoriesModal"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="fixed inset-0 z-50 overflow-y-auto"
+            @keydown.escape.window="showSubcategoriesModal = false"
+        >
+            <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                <!-- Background overlay -->
+                <div class="fixed inset-0 transition-opacity" @click="showSubcategoriesModal = false">
+                    <div class="absolute inset-0 bg-retro-black opacity-80"></div>
+                </div>
+
+                <!-- Modal panel -->
+                <div class="inline-block align-bottom bg-retro-cream rounded-xl text-left overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,0.3)] border-4 border-retro-black transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                    <div class="bg-retro-orange px-6 py-4 border-b-4 border-retro-black">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xl font-retro text-retro-black uppercase" x-text="selectedBroadCategory"></h3>
+                            <button @click="showSubcategoriesModal = false" class="text-retro-black hover:text-retro-red transition-colors">
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="p-4">
+                        <!-- Loading state -->
+                        <div x-show="loadingSubcategories" class="text-center py-8">
+                            <svg class="animate-spin mx-auto h-8 w-8 text-retro-red" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <p class="mt-3 text-retro-black font-bold">Generating ideas...</p>
+                        </div>
+
+                        <!-- Subcategories list -->
+                        <div x-show="!loadingSubcategories && subcategories.length > 0" class="space-y-2">
+                            <template x-for="(sub, index) in subcategories" :key="'sub-'+index">
+                                <button
+                                    @click="selectSubcategory(sub)"
+                                    class="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors border-2 border-retro-black bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-retro-yellow"
+                                >
+                                    <span class="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold border-2 border-retro-black bg-retro-red text-white" x-text="index + 1"></span>
+                                    <span class="font-bold text-retro-black" x-text="sub"></span>
+                                </button>
+                            </template>
+                        </div>
+
+                        <!-- Empty state -->
+                        <div x-show="!loadingSubcategories && subcategories.length === 0" class="text-center py-8 text-retro-black">
+                            <p>No suggestions available. Try again later.</p>
                         </div>
                     </div>
                 </div>

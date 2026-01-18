@@ -65,6 +65,16 @@ model_details = genai.GenerativeModel(
     }
 )
 
+# Subcategories model with high temperature for variety
+model_subcategories = genai.GenerativeModel(
+    'gemini-2.0-flash',
+    generation_config={
+        "response_mime_type": "application/json",
+        "response_schema": SUGGESTIONS_SCHEMA,
+        "temperature": 1.5  # High temperature for creative variety
+    }
+)
+
 
 def parse_json_response(text):
     """Parse JSON response with fallback for malformed AI output.
@@ -98,6 +108,30 @@ def parse_json_response(text):
     except json.JSONDecodeError:
         # Last resort: use json5 which is more lenient
         return json5.loads(fixed)
+
+
+def generate_subcategories(broad_category):
+    """Generate specific subcategory suggestions for a broad category."""
+    prompt = f"""Generate 10 specific and interesting quiz subcategories within the "{broad_category}" domain.
+
+These should be specific enough to create a ranked list quiz, for example:
+- For "Science": "Nobel Prize winners in Physics", "Female computer scientists", "Space missions to Mars"
+- For "Music": "80s one-hit wonders", "Best-selling albums of all time", "Classical composers from Austria"
+- For "Sports": "NBA players with most championship rings", "Female Olympic gymnasts", "Tour de France winners"
+
+Make them:
+- Specific and focused (not too broad)
+- Interesting and educational
+- Varied in scope (time periods, regions, achievements, demographics)
+- Fun to learn about
+
+Return a JSON object with:
+- "suggestions": An array of exactly 10 strings, each being a specific quiz category
+
+Return ONLY the JSON object, no markdown."""
+
+    response = model_subcategories.generate_content(prompt)
+    return json.loads(response.text)
 
 
 def generate_suggestions():
