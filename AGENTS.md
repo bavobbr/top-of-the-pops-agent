@@ -213,14 +213,24 @@ GOOGLE_AI_STUDIO_KEY=your_api_key
 
 ## Deployment
 
+**Important for AI Agents**: Do NOT deploy automatically. Deployments interrupt the live service and should be triggered by the user. Instead:
+1. Commit and push your changes
+2. Inform the user that changes are ready to deploy
+3. Let the user run the deployment command themselves
+
 ```bash
+# Local development
+python app.py
+
 # Local Docker
 docker build -t popquiz .
 docker run -p 8080:8080 -e GOOGLE_AI_STUDIO_KEY=key popquiz
 
-# Google Cloud Run
-gcloud run deploy popquiz --source . --allow-unauthenticated
+# Google Cloud Run (run by user, not by AI agents)
+gcloud run deploy popquiz --source . --allow-unauthenticated --region us-central1
 ```
+
+**Live URL**: https://popquiz-655271433629.us-central1.run.app
 
 ## Known Limitations
 
