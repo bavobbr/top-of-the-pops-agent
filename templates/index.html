@@ -131,8 +131,9 @@
                             <template x-for="(suggestion, index) in suggestions" :key="index">
                                 <button
                                     type="button"
-                                    @click="category = suggestion"
-                                    class="px-3 py-1 text-sm font-bold rounded-full border-2 border-retro-black transition-all duration-200 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
+                                    @click="category = suggestion; generateList()"
+                                    :disabled="loading"
+                                    class="px-3 py-1 text-sm font-bold rounded-full border-2 border-retro-black transition-all duration-200 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] disabled:opacity-50"
                                     :class="category === suggestion ? 'bg-retro-red text-white' : 'bg-retro-cream text-retro-black hover:bg-retro-yellow'"
                                     x-text="suggestion"
                                 ></button>

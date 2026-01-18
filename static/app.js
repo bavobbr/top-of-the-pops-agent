@@ -125,6 +125,7 @@ function popquiz() {
         selectSubcategory(subcategory) {
             this.category = subcategory;
             this.showSubcategoriesModal = false;
+            this.generateList();
         },
 
         async generateList() {
