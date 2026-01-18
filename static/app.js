@@ -1,3 +1,10 @@
+// Google Analytics 4 event tracking helper
+function trackEvent(eventName, params = {}) {
+    if (typeof gtag === 'function') {
+        gtag('event', eventName, params);
+    }
+}
+
 function popquiz() {
     return {
         // State
@@ -95,6 +102,7 @@ function popquiz() {
         },
 
         async openSubcategoriesModal(broadCategory) {
+            trackEvent('open_category_modal', { broad_category: broadCategory });
             this.selectedBroadCategory = broadCategory;
             this.subcategories = [];
             this.showSubcategoriesModal = true;
@@ -123,6 +131,10 @@ function popquiz() {
         },
 
         selectSubcategory(subcategory) {
+            trackEvent('select_subcategory', {
+                broad_category: this.selectedBroadCategory,
+                subcategory: subcategory
+            });
             this.category = subcategory;
             this.showSubcategoriesModal = false;
             this.generateList();
@@ -157,6 +169,13 @@ function popquiz() {
                 this.properties = data.properties || [];
                 this.categoryDisplay = this.category;
                 this.screen = 'study';
+
+                // Track quiz generation
+                trackEvent('generate_quiz', {
+                    category: this.category,
+                    language: this.language,
+                    item_count: this.items.length
+                });
 
                 // Update URL for sharing
                 this.updateUrl();
@@ -219,6 +238,7 @@ function popquiz() {
         async loadNextItem() {
             // Go to next item, loop back to start if at end
             const nextIndex = (this.currentItemIndex + 1) % this.items.length;
+            trackEvent('navigate_item', { method: 'next', item_index: nextIndex });
             await this.loadItem(nextIndex);
         },
 
@@ -231,15 +251,18 @@ function popquiz() {
             do {
                 randomIndex = Math.floor(Math.random() * this.items.length);
             } while (randomIndex === this.currentItemIndex);
+            trackEvent('navigate_item', { method: 'random', item_index: randomIndex });
             await this.loadItem(randomIndex);
         },
 
         async selectItem(index) {
             this.showListModal = false;
+            trackEvent('navigate_item', { method: 'select_from_list', item_index: index });
             await this.loadItem(index);
         },
 
         startNewQuiz() {
+            trackEvent('start_new_quiz');
             this.screen = 'input';
             this.items = [];
             this.properties = [];
