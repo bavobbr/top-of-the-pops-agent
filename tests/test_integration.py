@@ -211,7 +211,7 @@ class TestBroadCategoriesEndpoint:
         data = response.get_json()
         assert 'categories' in data
         assert isinstance(data['categories'], list)
-        assert len(data['categories']) == 10
+        assert len(data['categories']) == 16
 
     def test_broad_categories_are_strings(self, client):
         """All categories should be strings."""

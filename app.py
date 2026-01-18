@@ -96,10 +96,11 @@ def get_suggestions():
         return jsonify({'suggestions': fallback})
 
 
-# 10 broad quiz categories for category exploration
+# 16 broad quiz categories for category exploration
 BROAD_CATEGORIES = [
-    "Science", "History", "Music", "Film & TV", "Sports",
-    "Geography", "Art & Literature", "Technology", "Food & Drink", "Pop Culture"
+    "Science", "History", "Music", "Film & TV", "Sports", "Geography",
+    "Art & Literature", "Technology", "Food & Drink", "Pop Culture",
+    "Business", "Nature", "Politics", "Fashion", "Gaming", "Architecture"
 ]
 
 
