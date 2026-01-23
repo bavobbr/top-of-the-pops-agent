@@ -227,10 +227,11 @@ docker build -t popquiz .
 docker run -p 8080:8080 -e GOOGLE_AI_STUDIO_KEY=key popquiz
 
 # Google Cloud Run (run by user, not by AI agents)
-gcloud run deploy popquiz --source . --allow-unauthenticated --region us-central1
+gcloud config set project popquiz-484514
+gcloud run deploy top-of-the-pops --source . --region us-central1 --allow-unauthenticated --set-env-vars=GOOGLE_AI_STUDIO_KEY=XXX
 ```
 
-**Live URL**: https://popquiz-655271433629.us-central1.run.app
+**Live URL**: https://top-of-the-pops-655271433629.us-central1.run.app
 
 ## Known Limitations
 
